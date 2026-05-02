@@ -1,0 +1,342 @@
+// Briv — Prisma schema
+// Postgres (Neon) + Clerk-managed identity. Local user/org rows
+// mirror Clerk via webhooks and are the source of truth for relations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// IDENTITY
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id          String   @id @default(cuid())
+  clerkId     String   @unique
+  email       String   @unique
+  firstName   String?
+  lastName    String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberships Membership[]
+  documents   Document[]   @relation("DocumentAuthor")
+  signatures  Signature[]
+  comments    Comment[]
+
+  @@index([clerkId])
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  clerkId     String   @unique
+  slug        String   @unique
+  name        String
+  logoUrl     String?
+  plan        Plan     @default(STARTER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberships Membership[]
+  clients     Client[]
+  documents   Document[]
+  templates   Template[]
+  invoices    Invoice[]
+
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?
+  trialEndsAt           DateTime?
+
+  @@index([clerkId])
+}
+
+enum Plan {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  userId    String
+  orgId     String
+  role      Role     @default(MEMBER)
+  createdAt DateTime @default(now())
+
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+// ─────────────────────────────────────────────────────────────
+// CRM
+// ─────────────────────────────────────────────────────────────
+
+model Client {
+  id        String   @id @default(cuid())
+  orgId     String
+  name      String
+  email     String?
+  phone     String?
+  company   String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@index([orgId])
+  @@index([email])
+}
+
+// ─────────────────────────────────────────────────────────────
+// DOCUMENTS — Estimates / Proposals / Contracts / Invoices live
+// in one model with a discriminator so we can share the editor,
+// AI pipeline, signing flow, and audit trail.
+// ─────────────────────────────────────────────────────────────
+
+model Document {
+  id          String        @id @default(cuid())
+  orgId       String
+  clientId    String?
+  authorId    String
+  type        DocumentType
+  status      DocumentStatus @default(DRAFT)
+
+  number      String        // EST-0421 / PROP-0012 / CON-0007 / INV-0103
+  title       String
+  currency    String        @default("USD")
+
+  // Pricing snapshot — computed from line items at time of send/sign.
+  subtotalCents Int        @default(0)
+  taxCents      Int        @default(0)
+  totalCents    Int        @default(0)
+  taxRate       Decimal    @default(0) @db.Decimal(6, 4)
+
+  // Free-form rich content (Tiptap-compatible JSON).
+  body          Json?
+  // AI metadata
+  aiPrompt      String?
+  aiModel       String?
+  aiGeneratedAt DateTime?
+
+  issuedAt    DateTime?
+  dueAt       DateTime?
+  sentAt      DateTime?
+  viewedAt    DateTime?
+  signedAt    DateTime?
+  paidAt      DateTime?
+  voidedAt    DateTime?
+
+  publicSlug  String        @unique @default(cuid())
+  shareToken  String?       @unique
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  org         Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  client      Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  author      User          @relation("DocumentAuthor", fields: [authorId], references: [id])
+
+  lineItems   LineItem[]
+  signatures  Signature[]
+  comments    Comment[]
+  events      DocumentEvent[]
+  invoice     Invoice?
+
+  @@unique([orgId, number])
+  @@index([orgId, type])
+  @@index([orgId, status])
+}
+
+enum DocumentType {
+  ESTIMATE
+  PROPOSAL
+  CONTRACT
+  INVOICE
+}
+
+enum DocumentStatus {
+  DRAFT
+  SENT
+  VIEWED
+  SIGNED
+  DECLINED
+  PAID
+  OVERDUE
+  VOID
+}
+
+model LineItem {
+  id          String   @id @default(cuid())
+  documentId  String
+  position    Int      @default(0)
+  description String
+  quantity    Decimal  @default(1) @db.Decimal(12, 3)
+  unitCents   Int      @default(0)
+  totalCents  Int      @default(0)
+  metadata    Json?
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+model Signature {
+  id           String   @id @default(cuid())
+  documentId   String
+  userId       String?
+  signerName   String
+  signerEmail  String
+  signedAt     DateTime @default(now())
+  ipAddress    String?
+  userAgent    String?
+  imageData    String?  @db.Text // base64 SVG/PNG of drawn signature
+  verified     Boolean  @default(false)
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([documentId])
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  documentId String
+  userId     String
+  body       String
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+model DocumentEvent {
+  id         String   @id @default(cuid())
+  documentId String
+  type       EventType
+  actor      String?  // userId, "client", or "system"
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, type])
+}
+
+enum EventType {
+  CREATED
+  EDITED
+  SENT
+  OPENED
+  COMMENTED
+  SIGNED
+  DECLINED
+  PAID
+  VOIDED
+  AI_DRAFTED
+}
+
+// ─────────────────────────────────────────────────────────────
+// PAYMENTS
+// ─────────────────────────────────────────────────────────────
+
+model Invoice {
+  id              String   @id @default(cuid())
+  documentId      String   @unique
+  orgId           String
+  stripeInvoiceId String?  @unique
+  stripeIntentId  String?
+  amountCents     Int
+  currency        String   @default("USD")
+  status          InvoiceStatus @default(OPEN)
+  dueAt           DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  document Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([orgId, status])
+}
+
+enum InvoiceStatus {
+  OPEN
+  PAID
+  PARTIAL
+  REFUNDED
+  VOID
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  invoiceId       String
+  stripeChargeId  String?  @unique
+  amountCents     Int
+  currency        String   @default("USD")
+  method          PaymentMethod
+  status          PaymentStatus
+  receivedAt      DateTime @default(now())
+  metadata        Json?
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+enum PaymentMethod {
+  CARD
+  ACH
+  PAYPAL
+  WIRE
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+// ─────────────────────────────────────────────────────────────
+// TEMPLATES
+// ─────────────────────────────────────────────────────────────
+
+model Template {
+  id        String       @id @default(cuid())
+  orgId     String
+  name      String
+  type      DocumentType
+  body      Json?
+  lineItems Json?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, type])
+}
