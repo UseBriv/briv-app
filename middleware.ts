@@ -1,4 +1,6 @@
+import { NextResponse, type NextRequest } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { env } from "@/lib/env";
 
 const isPublicRoute = createRouteMatcher([
   "/",
@@ -10,11 +12,21 @@ const isPublicRoute = createRouteMatcher([
   "/api/health",
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
+const protectedMiddleware = clerkMiddleware(async (auth, req) => {
   if (!isPublicRoute(req)) {
     await auth.protect();
   }
 });
+
+// When Clerk isn't configured, run an inert middleware so the app still
+// boots (marketing + public pages work; protected pages render but the
+// in-page auth helpers return null → user sees gentle "configure Clerk" UI).
+function passthrough(_req: NextRequest) {
+  return NextResponse.next();
+}
+
+const middleware = env.hasClerk ? protectedMiddleware : passthrough;
+export default middleware;
 
 export const config = {
   matcher: [

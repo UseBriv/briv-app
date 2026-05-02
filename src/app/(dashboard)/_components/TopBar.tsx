@@ -2,6 +2,7 @@ import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { Search, Bell } from "lucide-react";
+import { env } from "@/lib/env";
 
 export function TopBar({ title }: { title: string }) {
   return (
@@ -62,11 +63,26 @@ export function TopBar({ title }: { title: string }) {
           New document <ArrowIcon size={12} />
         </Link>
 
-        <UserButton
-          appearance={{
-            elements: { avatarBox: { width: 36, height: 36 } },
-          }}
-        />
+        {env.hasClerk ? (
+          <UserButton
+            appearance={{
+              elements: { avatarBox: { width: 36, height: 36 } },
+            }}
+          />
+        ) : (
+          <div
+            aria-hidden
+            className="grid size-9 place-items-center rounded-full"
+            style={{
+              background: "var(--color-paper-2)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--color-muted-2)",
+            }}
+          >
+            ?
+          </div>
+        )}
       </div>
     </header>
   );

@@ -1,7 +1,10 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { db } from "./db";
+import { env } from "./env";
 
 export async function getCurrentUser() {
+  if (!env.hasClerk || !env.hasDatabase) return null;
+
   const { userId } = await auth();
   if (!userId) return null;
 
@@ -18,6 +21,8 @@ export async function getCurrentUser() {
 }
 
 export async function getCurrentOrg() {
+  if (!env.hasClerk || !env.hasDatabase) return null;
+
   const { orgId } = await auth();
   if (!orgId) return null;
 
@@ -39,6 +44,8 @@ export async function requireOrg() {
 }
 
 export async function ensureUserExists() {
+  if (!env.hasClerk || !env.hasDatabase) return null;
+
   const clerkUser = await currentUser();
   if (!clerkUser) return null;
 
