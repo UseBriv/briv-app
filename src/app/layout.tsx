@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { env } from "@/lib/env";
+import { env, getAppUrl } from "@/lib/env";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(getAppUrl()),
   title: {
     default: "Briv — AI estimates, proposals & contracts that close themselves",
     template: "%s · Briv",
@@ -36,7 +36,11 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const tree = (
+  // ClerkProvider must live inside <body> (not wrapping <html>). When keys are missing,
+  // skip the provider so marketing + builds still work.
+  const body = env.hasClerk ? <ClerkProvider>{children}</ClerkProvider> : children;
+
+  return (
     <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -46,11 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>{body}</body>
     </html>
   );
-
-  // Render ClerkProvider only when keys are configured.
-  // Lets the marketing site & build succeed before Clerk is wired up.
-  return env.hasClerk ? <ClerkProvider>{tree}</ClerkProvider> : tree;
 }

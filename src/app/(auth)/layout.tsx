@@ -96,7 +96,7 @@ function ClerkNotConfigured() {
       }}
     >
       <span className="pill" style={{ marginBottom: 16 }}>
-        <span className="dot" /> PREVIEW MODE
+        <span className="dot" /> CLERK NOT CONFIGURED
       </span>
       <h3
         style={{
@@ -106,11 +106,13 @@ function ClerkNotConfigured() {
           marginBottom: 8,
         }}
       >
-        Auth not yet configured
+        Sign-in is disabled on this deploy
       </h3>
       <p style={{ color: "var(--color-muted)", fontSize: 14 }}>
-        Add <code>NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code> + <code>CLERK_SECRET_KEY</code> in
-        Vercel project settings to enable sign-in.
+        In Vercel → Settings → Environment Variables, add{" "}
+        <code>NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code> and <code>CLERK_SECRET_KEY</code>, and
+        select the Preview environment (not only Production). In the Clerk dashboard, add your
+        preview origin (e.g. <code>https://*.vercel.app</code>) under allowed redirect URLs.
       </p>
     </div>
   );
