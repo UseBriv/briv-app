@@ -56,7 +56,7 @@ export function Footer() {
         }}
       />
       <div className="container-brand">
-        <div className="footer-grid" style={{ marginBottom: 60 }}>
+        <div className="footer-grid" style={{ marginBottom: 48 }}>
           <div>
             <Logo variant="cream" />
             <p
@@ -68,8 +68,7 @@ export function Footer() {
                 marginTop: 16,
               }}
             >
-              The AI document workspace for modern service businesses. Made in Brooklyn &amp;
-              Lagos.
+              The AI document workspace for modern service businesses.
             </p>
           </div>
 
@@ -110,24 +109,9 @@ export function Footer() {
         </div>
 
         <div
-          style={{
-            fontFamily: "var(--font-serif)",
-            fontSize: "clamp(80px, 18vw, 280px)",
-            lineHeight: 0.85,
-            letterSpacing: "-0.03em",
-            color: "var(--color-cream)",
-            textAlign: "center",
-            margin: "60px 0 40px",
-            overflow: "hidden",
-          }}
-        >
-          Briv<em style={{ fontStyle: "italic", color: "var(--color-lime)" }}>.</em>
-        </div>
-
-        <div
           className="flex flex-wrap items-center justify-between"
           style={{
-            paddingTop: 32,
+            paddingTop: 24,
             borderTop: "1px solid rgba(255,255,255,0.1)",
             fontFamily: "var(--font-mono)",
             fontSize: 11,
