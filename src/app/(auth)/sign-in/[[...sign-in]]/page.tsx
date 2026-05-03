@@ -3,6 +3,7 @@ import { SignIn } from "@clerk/nextjs";
 export default function Page() {
   return (
     <SignIn
+      fallbackRedirectUrl="/dashboard"
       appearance={{
         variables: {
           colorPrimary: "#0b0b0c",
