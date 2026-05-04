@@ -1,9 +1,22 @@
 import { TopBar } from "../_components/TopBar";
 import { getCurrentUser, getCurrentOrg } from "@/lib/auth";
+import { env } from "@/lib/env";
+import { SettingsAccountEditor } from "./_components/SettingsAccountEditor";
+import { SettingsWorkspaceEditor } from "./_components/SettingsWorkspaceEditor";
+
+function formatPlan(plan: string | undefined | null): string {
+  if (!plan) return "—";
+  const words = plan.replace(/_/g, " ").toLowerCase().split(" ");
+  return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
   const org = await getCurrentOrg();
+
+  const accountFirst = user?.firstName ?? "";
+  const accountLast = user?.lastName ?? "";
+  const accountEmail = user?.email ?? "";
 
   return (
     <>
@@ -11,13 +24,35 @@ export default async function SettingsPage() {
       <main className="px-8 py-8">
         <div className="grid gap-6" style={{ maxWidth: 720 }}>
           <Card title="Account" subtitle="Your personal Briv profile.">
-            <Field label="Name" value={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || "—"} />
-            <Field label="Email" value={user?.email ?? "—"} />
+            {env.hasClerk ? (
+              <SettingsAccountEditor
+                initialFirstName={accountFirst}
+                initialLastName={accountLast}
+                initialEmail={accountEmail}
+              />
+            ) : (
+              <>
+                <Field
+                  label="Name"
+                  value={`${accountFirst} ${accountLast}`.trim() || "—"}
+                />
+                <Field label="Email" value={accountEmail || "—"} />
+              </>
+            )}
           </Card>
 
           <Card title="Workspace" subtitle="Your team’s shared workspace.">
-            <Field label="Name" value={org?.name ?? "—"} />
-            <Field label="Plan" value={org?.plan ?? "—"} />
+            {env.hasClerk ? (
+              <SettingsWorkspaceEditor
+                initialName={org?.name ?? ""}
+                planLabel={formatPlan(org?.plan)}
+              />
+            ) : (
+              <>
+                <Field label="Name" value={org?.name ?? "—"} />
+                <Field label="Plan" value={formatPlan(org?.plan)} />
+              </>
+            )}
           </Card>
         </div>
       </main>
