@@ -31,9 +31,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
               fontSize: 12,
             }}
           >
-            Postgres unreachable — replace <code style={{ opacity: 0.95 }}>DATABASE_URL</code> in{" "}
-            <code>.env.local</code> with your Neon connection string (not the{" "}
-            <code>host:5432</code> placeholder).
+            Postgres unreachable — confirm <code style={{ opacity: 0.95 }}>DATABASE_URL</code> and{" "}
+            <code>DIRECT_URL</code> in <code>.env.local</code> are Neon URLs, then fully restart{" "}
+            <code>npm run dev</code> (Next only reloads some env on save; a stuck Prisma client also
+            clears on restart).
           </div>
           <main className="px-8 py-12" style={{ maxWidth: 560 }}>
             <h2
@@ -47,12 +48,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
               Dashboard needs a database
             </h2>
             <p style={{ color: "var(--color-muted)", lineHeight: 1.6, marginBottom: 16 }}>
-              Create a free project at{" "}
+              If you have not wired Neon yet: create a project at{" "}
               <a href="https://neon.tech" className="underline" style={{ color: "var(--color-ink)" }}>
                 neon.tech
               </a>
-              , copy the pooled connection URL, set <code>DATABASE_URL</code> and{" "}
-              <code>DIRECT_URL</code>, then run <code>npx prisma db push</code> from the repo root.
+              , set pooled <code>DATABASE_URL</code> and direct <code>DIRECT_URL</code>, then run{" "}
+              <code>npx prisma db push</code> from the repo root. After saving env changes, stop the
+              dev server and start it again.
             </p>
           </main>
         </div>
