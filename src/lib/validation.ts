@@ -4,6 +4,7 @@ export const lineItemSchema = z.object({
   description: z.string().min(1).max(500),
   quantity: z.number().positive().default(1),
   unitCents: z.number().int().nonnegative(),
+  note: z.string().max(500).optional(),
 });
 
 export const createDocumentSchema = z.object({
@@ -15,6 +16,7 @@ export const createDocumentSchema = z.object({
   lineItems: z.array(lineItemSchema).default([]),
   body: z.unknown().optional(),
   dueAt: z.string().datetime().optional(),
+  issuedAt: z.string().datetime().optional(),
 });
 
 export const updateDocumentSchema = createDocumentSchema.partial().extend({

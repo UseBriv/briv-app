@@ -4,7 +4,7 @@ import { createDocumentSchema } from "@/lib/validation";
 import { getCurrentOrgSynced, getCurrentUser } from "@/lib/auth";
 import { generateDocumentNumber } from "@/lib/utils";
 import { generateShareToken } from "@/lib/signing";
-import type { DocumentType } from "@prisma/client";
+import type { DocumentType, Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -65,6 +65,10 @@ export async function POST(req: NextRequest) {
       totalCents,
       number,
       shareToken: generateShareToken(),
+      ...(input.body !== undefined
+        ? { body: input.body as Prisma.InputJsonValue }
+        : {}),
+      issuedAt: input.issuedAt ? new Date(input.issuedAt) : null,
       dueAt: input.dueAt ? new Date(input.dueAt) : null,
       lineItems: {
         create: input.lineItems.map((li, idx) => ({
@@ -73,6 +77,8 @@ export async function POST(req: NextRequest) {
           quantity: li.quantity,
           unitCents: li.unitCents,
           totalCents: Math.round(li.quantity * li.unitCents),
+          metadata:
+            li.note && li.note.trim().length > 0 ? { note: li.note.trim() } : undefined,
         })),
       },
       events: {

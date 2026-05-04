@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown, Eye, Mic, MoreHorizontal, Sparkles } from "lucide-react";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { formatCurrency } from "@/lib/utils";
 import type { AiEstimate } from "@/lib/ai/types";
@@ -41,20 +42,48 @@ const TYPE_LABEL: Record<DocumentType, string> = {
   INVOICE: "Invoice",
 };
 
-/** Branded AI assistant for the document studio (shown in the sidebar co-pilot panel). */
-const ASSISTANT_NAME = "Brivy";
+/** Standalone assistant product name (not compounded with “Briv”). */
+const VELA = "Vela";
 
-function emptyLineItem(): LineItem {
-  return { description: "", quantity: "1", unitAmount: "0" };
+const TERMS_OPTIONS = ["Net 14", "Net 30", "Due on receipt"] as const;
+
+const QUICK_STARTERS: { label: string; text: string }[] = [
+  { label: "Kitchen remodel proposal", text: "Kitchen remodel — walnut cabinets, quartz counters, ~3 weeks, detailed scope for homeowner." },
+  { label: "Interior design scope", text: "Interior design scope — mood boards, furnishings, install coordination for residential project." },
+];
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
 }
 
-export function DocumentStudio() {
+function addDaysISO(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function emptyLineItem(): LineItem {
+  return { description: "", quantity: "1", unitAmount: "0", note: "" };
+}
+
+export function DocumentStudio({ onActivity }: { onActivity?: () => void }) {
   const router = useRouter();
   const [type, setType] = useState<DocumentType>("INVOICE");
-  const [title, setTitle] = useState("New document");
+  const [title, setTitle] = useState("Invoice for Maya Reyes");
+  const [description, setDescription] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [taxRatePercent, setTaxRatePercent] = useState("0");
-  const [lineItems, setLineItems] = useState<LineItem[]>([emptyLineItem()]);
+  const [issueDate, setIssueDate] = useState(todayISO);
+  const [dueDate, setDueDate] = useState(() => addDaysISO(14));
+  const [termsPreset, setTermsPreset] = useState<string>(TERMS_OPTIONS[0]);
+  const [lineItems, setLineItems] = useState<LineItem[]>(() => [
+    {
+      description: "Kitchen remodel — walnut cabinets",
+      quantity: "1",
+      unitAmount: "8500",
+      note: "Design, materials, labor",
+    },
+  ]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,6 +111,23 @@ export function DocumentStudio() {
       .catch(() => setTemplates([]))
       .finally(() => setLoadingTemplates(false));
   }, []);
+
+  useEffect(() => {
+    onActivity?.();
+  }, [
+    onActivity,
+    type,
+    title,
+    description,
+    currency,
+    taxRatePercent,
+    issueDate,
+    dueDate,
+    termsPreset,
+    lineItems,
+    prompt,
+    templateId,
+  ]);
 
   const filteredTemplates = useMemo(
     () => templates.filter((template) => template.type === type),
@@ -123,7 +169,7 @@ export function DocumentStudio() {
       description: li.description,
       quantity: li.quantity.toString(),
       unitAmount: (li.unitCents / 100).toString(),
-      note: undefined,
+      note: "",
     }));
     setLineItems(nextLineItems.length > 0 ? nextLineItems : [emptyLineItem()]);
     setAiMeta(null);
@@ -225,6 +271,7 @@ export function DocumentStudio() {
         description: li.description.trim(),
         quantity: Number(li.quantity || 0),
         unitCents: Math.round(Number(li.unitAmount || 0) * 100),
+        note: li.note?.trim() || undefined,
       }))
       .filter((li) => li.description.length > 0);
 
@@ -249,6 +296,11 @@ export function DocumentStudio() {
           currency: currency.trim().toUpperCase(),
           taxRate: Math.max(Number(taxRatePercent || 0), 0) / 100,
           lineItems: cleanLineItems,
+          body: description.trim()
+            ? { studioSummary: description.trim(), termsLabel: termsPreset }
+            : { termsLabel: termsPreset },
+          issuedAt: issueDate ? new Date(`${issueDate}T12:00:00`).toISOString() : undefined,
+          dueAt: dueDate ? new Date(`${dueDate}T12:00:00`).toISOString() : undefined,
         }),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -261,229 +313,343 @@ export function DocumentStudio() {
     }
   }
 
+  const lineBorder = "var(--color-line)";
+
   return (
-    <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
+    <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
       <section
-        className="lg:col-span-8 rounded-[20px] border p-8"
-        style={{ background: "var(--color-cream)", borderColor: "var(--color-line)" }}
+        className="rounded-[24px] border p-6 sm:p-8"
+        style={{
+          background: "var(--color-cream)",
+          borderColor: lineBorder,
+          boxShadow: "var(--shadow-soft)",
+        }}
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0 flex-1">
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "var(--color-muted-2)",
+                marginBottom: 8,
+              }}
+            >
+              {TYPE_LABEL[type]}
+            </div>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full border-0 bg-transparent p-0 focus:outline-none focus:ring-0"
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: "clamp(1.75rem, 4vw, 2.25rem)",
+                letterSpacing: "-0.02em",
+                lineHeight: 1.1,
+                color: "var(--color-ink)",
+              }}
+            />
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Add a short description of the work or project…"
+              rows={2}
+              className="mt-3 w-full resize-none border-0 bg-transparent p-0 text-[15px] focus:outline-none focus:ring-0"
+              style={{ color: "var(--color-muted)", fontFamily: "var(--font-sans)" }}
+            />
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
             <span
               className="pill"
               style={{
                 background: "rgba(26,26,27,0.06)",
                 borderColor: "var(--color-line)",
                 color: "var(--color-muted)",
-                marginBottom: 10,
               }}
             >
-              <span className="dot" /> Live document
+              Draft
             </span>
-            <h2
-              style={{
-                fontFamily: "var(--font-serif)",
-                fontSize: 30,
-                letterSpacing: "-0.02em",
-                lineHeight: 1.1,
-              }}
-            >
-              One canvas — edit everything before you publish
-            </h2>
-            <p style={{ color: "var(--color-muted)", marginTop: 8, maxWidth: 520 }}>
-              Templates and {ASSISTANT_NAME} both write into this same draft. Nothing ships until you
-              create the document.
-            </p>
+            <details className="relative">
+              <summary
+                className="grid size-10 cursor-pointer list-none place-items-center rounded-full border transition hover:bg-black/[0.03]"
+                style={{ borderColor: "var(--color-line-strong)" }}
+              >
+                <MoreHorizontal size={18} strokeWidth={1.75} style={{ color: "var(--color-muted)" }} />
+              </summary>
+              <div
+                className="absolute right-0 z-20 mt-2 min-w-[180px] rounded-[12px] border py-1 shadow-lg"
+                style={{
+                  background: "var(--color-cream)",
+                  borderColor: "var(--color-line)",
+                  boxShadow: "var(--shadow-float)",
+                }}
+              >
+                <button
+                  type="button"
+                  className="w-full px-4 py-2.5 text-left text-[13px] hover:bg-black/[0.04]"
+                  onClick={() => document.getElementById("doc-create-cta")?.scrollIntoView({ behavior: "smooth" })}
+                >
+                  Jump to create
+                </button>
+              </div>
+            </details>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 12, color: "var(--color-muted)" }}>Type</span>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as DocumentType)}
-              className="rounded-[10px] border px-3 py-2"
-              style={{ borderColor: "var(--color-line)" }}
-            >
-              {Object.entries(TYPE_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 12, color: "var(--color-muted)" }}>Title</span>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="rounded-[10px] border px-3 py-2"
-              style={{ borderColor: "var(--color-line)" }}
-            />
-          </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 12, color: "var(--color-muted)" }}>Currency</span>
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <label className="grid gap-1.5">
+            <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-muted-2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Currency
+            </span>
             <input
               value={currency}
               maxLength={3}
               onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-              className="rounded-[10px] border px-3 py-2"
-              style={{ borderColor: "var(--color-line)" }}
+              className="rounded-[12px] border px-3 py-2.5 text-[14px]"
+              style={{ borderColor: lineBorder, fontFamily: "var(--font-mono)" }}
             />
           </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 12, color: "var(--color-muted)" }}>Tax %</span>
+          <label className="grid gap-1.5">
+            <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-muted-2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Issue date
+            </span>
             <input
-              type="number"
-              min={0}
-              step={0.01}
-              value={taxRatePercent}
-              onChange={(e) => setTaxRatePercent(e.target.value)}
-              className="rounded-[10px] border px-3 py-2"
-              style={{ borderColor: "var(--color-line)" }}
+              type="date"
+              value={issueDate}
+              onChange={(e) => setIssueDate(e.target.value)}
+              className="rounded-[12px] border px-3 py-2.5 text-[14px]"
+              style={{ borderColor: lineBorder, fontFamily: "var(--font-mono)" }}
+            />
+          </label>
+          <label className="grid gap-1.5">
+            <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-muted-2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Due date
+            </span>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="rounded-[12px] border px-3 py-2.5 text-[14px]"
+              style={{ borderColor: lineBorder, fontFamily: "var(--font-mono)" }}
             />
           </label>
         </div>
 
-        <div className="mt-5 rounded-[12px] border p-4" style={{ borderColor: "var(--color-line)" }}>
-          <div className="flex flex-wrap items-end gap-3">
-            <label style={{ display: "grid", gap: 6, minWidth: 240, flex: 1 }}>
-              <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
-                Templates ({loadingTemplates ? "…" : filteredTemplates.length} for this type)
-              </span>
+        <div className="mt-10 overflow-x-auto">
+          <div
+            className="grid min-w-[640px] gap-3 pb-2"
+            style={{
+              gridTemplateColumns: "44px minmax(200px,1fr) 72px 100px 100px 40px",
+              alignItems: "start",
+            }}
+          >
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-muted-2)" }}>
+              #
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-muted-2)" }}>
+              Item
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-muted-2)" }}>
+              Qty
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-muted-2)" }}>
+              Unit
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-muted-2)", textAlign: "right" }}>
+              Amount
+            </span>
+            <span />
+            {lineItems.map((li, i) => {
+              const qty = Number(li.quantity || 0);
+              const unitCents = Math.round(Number(li.unitAmount || 0) * 100);
+              const rowCents = Math.round(Math.max(qty, 0) * Math.max(unitCents, 0));
+              const idx = String(i + 1).padStart(2, "0");
+              return (
+                <div key={i} style={{ display: "contents" }}>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 13,
+                      color: "var(--color-muted)",
+                      paddingTop: 10,
+                    }}
+                  >
+                    {idx}
+                  </div>
+                  <div>
+                    <input
+                      value={li.description}
+                      onChange={(e) => updateLineItem(i, { description: e.target.value })}
+                      className="w-full rounded-[12px] border px-3 py-2.5 text-[14px]"
+                      style={{ borderColor: lineBorder }}
+                      placeholder="Line title"
+                    />
+                    <input
+                      value={li.note ?? ""}
+                      onChange={(e) => updateLineItem(i, { note: e.target.value })}
+                      className="mt-2 w-full border-0 bg-transparent p-0 text-[13px] focus:outline-none focus:ring-0"
+                      style={{ color: "var(--color-muted-2)" }}
+                      placeholder="Sub-description (optional)"
+                    />
+                  </div>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={li.quantity}
+                    onChange={(e) => updateLineItem(i, { quantity: e.target.value })}
+                    className="rounded-[12px] border px-3 py-2.5 text-[14px]"
+                    style={{ borderColor: lineBorder, fontFamily: "var(--font-mono)" }}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={li.unitAmount}
+                    onChange={(e) => updateLineItem(i, { unitAmount: e.target.value })}
+                    className="rounded-[12px] border px-3 py-2.5 text-[14px]"
+                    style={{ borderColor: lineBorder, fontFamily: "var(--font-mono)" }}
+                  />
+                  <div
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 13,
+                      textAlign: "right",
+                      paddingTop: 10,
+                      color: "var(--color-ink)",
+                    }}
+                  >
+                    {formatCurrency(rowCents, currency)}
+                  </div>
+                  <details className="relative justify-self-end pt-2">
+                    <summary className="grid size-9 cursor-pointer list-none place-items-center rounded-full border border-transparent hover:border-[var(--color-line-strong)]">
+                      <MoreHorizontal size={16} style={{ color: "var(--color-muted)" }} />
+                    </summary>
+                    <div
+                      className="absolute right-0 z-10 mt-1 min-w-[120px] rounded-[10px] border py-1 shadow-md"
+                      style={{ background: "var(--color-cream)", borderColor: lineBorder }}
+                    >
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left text-[13px] hover:bg-black/[0.04]"
+                        disabled={lineItems.length === 1}
+                        onClick={() => setLineItems((prev) => prev.filter((_, idx) => idx !== i))}
+                      >
+                        Remove row
+                      </button>
+                    </div>
+                  </details>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="btn btn-ghost text-[13px]"
+            style={{ padding: "10px 16px", borderRadius: 999 }}
+            onClick={() => setLineItems((prev) => [...prev, emptyLineItem()])}
+          >
+            + Add item
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost text-[13px]"
+            style={{ padding: "10px 16px", borderRadius: 999 }}
+            onClick={() => setLineItems((prev) => [...prev, emptyLineItem()])}
+          >
+            + Add section
+          </button>
+        </div>
+
+        <div className="mt-10 flex flex-col gap-4 border-t pt-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between" style={{ borderColor: lineBorder }}>
+          <label className="grid gap-1.5 sm:min-w-[200px]">
+            <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-muted-2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Template
+            </span>
+            <div className="relative">
               <select
                 value={templateId}
                 onChange={(e) => setTemplateId(e.target.value)}
-                className="rounded-[10px] border px-3 py-2"
-                style={{ borderColor: "var(--color-line)" }}
+                className="w-full appearance-none rounded-[12px] border px-3 py-2.5 pr-10 text-[14px]"
+                style={{ borderColor: lineBorder }}
               >
-                <option value="">Select template</option>
+                <option value="">Minimal — Elegant</option>
                 {filteredTemplates.map((template) => (
                   <option key={template.id} value={template.id}>
                     {template.name}
                   </option>
                 ))}
               </select>
-            </label>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={applyTemplate}
-              disabled={!templateId}
-            >
-              Apply
-            </button>
-          </div>
-          <div className="mt-3 flex flex-wrap items-end gap-3">
-            <label style={{ display: "grid", gap: 6, minWidth: 240, flex: 1 }}>
-              <span style={{ fontSize: 12, color: "var(--color-muted)" }}>Save as template</span>
-              <input
-                placeholder="Template name"
-                value={templateName}
-                onChange={(e) => setTemplateName(e.target.value)}
-                className="rounded-[10px] border px-3 py-2"
-                style={{ borderColor: "var(--color-line)" }}
+              <ChevronDown
+                className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2"
+                style={{ color: "var(--color-muted)" }}
+                aria-hidden
               />
-            </label>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={saveTemplate}
-              disabled={savingTemplate}
-            >
-              {savingTemplate ? "Saving…" : "Save template"}
+            </div>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn btn-ghost text-[13px]" style={{ padding: "8px 14px" }} onClick={applyTemplate} disabled={!templateId}>
+              Apply template
             </button>
           </div>
+          <label className="grid gap-1.5 sm:min-w-[160px]">
+            <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-muted-2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Terms
+            </span>
+            <div className="relative">
+              <select
+                value={termsPreset}
+                onChange={(e) => setTermsPreset(e.target.value)}
+                className="w-full appearance-none rounded-[12px] border px-3 py-2.5 pr-10 text-[14px]"
+                style={{ borderColor: lineBorder }}
+              >
+                {TERMS_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2"
+                style={{ color: "var(--color-muted)" }}
+                aria-hidden
+              />
+            </div>
+          </label>
         </div>
 
-        <div className="mt-6 grid gap-3">
-          <div
-            className="grid"
-            style={{
-              gridTemplateColumns: "1.5fr 120px 140px auto",
-              gap: 8,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--color-muted-2)",
-              textTransform: "uppercase",
-            }}
+        <label className="mt-6 grid gap-1.5 sm:max-w-xs">
+          <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-muted-2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            Document type
+          </span>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as DocumentType)}
+            className="rounded-[12px] border px-3 py-2.5 text-[14px]"
+            style={{ borderColor: lineBorder }}
           >
-            <span>Description</span>
-            <span>Qty</span>
-            <span>Unit</span>
-            <span />
-          </div>
-          {lineItems.map((li, i) => (
-            <div key={i}>
-              <div
-                className="grid"
-                style={{
-                  gridTemplateColumns: "1.5fr 120px 140px auto",
-                  gap: 8,
-                  alignItems: "start",
-                }}
-              >
-                <div>
-                  <input
-                    value={li.description}
-                    onChange={(e) => updateLineItem(i, { description: e.target.value })}
-                    className="w-full rounded-[10px] border px-3 py-2"
-                    style={{ borderColor: "var(--color-line)" }}
-                  />
-                  {li.note ? (
-                    <div style={{ fontSize: 12, color: "var(--color-muted-2)", marginTop: 4 }}>
-                      {li.note}
-                    </div>
-                  ) : null}
-                </div>
-                <input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={li.quantity}
-                  onChange={(e) => updateLineItem(i, { quantity: e.target.value })}
-                  className="rounded-[10px] border px-3 py-2"
-                  style={{ borderColor: "var(--color-line)" }}
-                />
-                <input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={li.unitAmount}
-                  onChange={(e) => updateLineItem(i, { unitAmount: e.target.value })}
-                  className="rounded-[10px] border px-3 py-2"
-                  style={{ borderColor: "var(--color-line)" }}
-                />
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  disabled={lineItems.length === 1}
-                  onClick={() => setLineItems((prev) => prev.filter((_, idx) => idx !== i))}
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          ))}
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => setLineItems((prev) => [...prev, emptyLineItem()])}
-          >
-            Add line item
-          </button>
-        </div>
+            {Object.entries(TYPE_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
 
         {aiMeta ? (
-          <div className="mt-5 rounded-[12px] border p-4" style={{ borderColor: "var(--color-line)" }}>
+          <div className="mt-8 rounded-[16px] border p-5" style={{ borderColor: lineBorder }}>
             <button
               type="button"
               className="flex w-full items-center justify-between gap-2 text-left"
               onClick={() => setShowAiNotes((v) => !v)}
             >
               <span style={{ fontFamily: "var(--font-serif)", fontSize: 18 }}>
-                {ASSISTANT_NAME} · {Math.round(aiMeta.confidence * 100)}% confidence
+                {VELA} · {Math.round(aiMeta.confidence * 100)}% confidence
               </span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-muted)" }}>
                 {showAiNotes ? "Hide" : "Show"}
@@ -528,7 +694,7 @@ export function DocumentStudio() {
                         color: "var(--color-muted-2)",
                       }}
                     >
-                      Terms (reference — add to body in editor later)
+                      Terms (reference)
                     </div>
                     <ul style={{ paddingLeft: 18 }}>
                       {aiMeta.termsAndConditions.map((s, idx) => (
@@ -542,34 +708,11 @@ export function DocumentStudio() {
           </div>
         ) : null}
 
-        <div
-          className="mt-4 grid"
-          style={{
-            gridTemplateColumns: "1fr auto",
-            gap: "6px 16px",
-            borderTop: "1px solid var(--color-line)",
-            paddingTop: 16,
-          }}
-        >
-          <span style={{ color: "var(--color-muted)", fontSize: 13 }}>Subtotal</span>
-          <span style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12 }}>
-            {formatCurrency(totals.subtotalCents, currency)}
-          </span>
-          <span style={{ color: "var(--color-muted)", fontSize: 13 }}>Tax</span>
-          <span style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12 }}>
-            {formatCurrency(totals.taxCents, currency)}
-          </span>
-          <span style={{ fontFamily: "var(--font-serif)", fontSize: 18 }}>Total</span>
-          <span style={{ textAlign: "right", fontFamily: "var(--font-serif)", fontSize: 24 }}>
-            {formatCurrency(totals.totalCents, currency)}
-          </span>
-        </div>
-
         {error ? (
           <div
             style={{
               color: "#b22727",
-              marginTop: 12,
+              marginTop: 16,
               fontSize: 13,
               fontFamily: "var(--font-mono)",
             }}
@@ -578,7 +721,7 @@ export function DocumentStudio() {
           </div>
         ) : null}
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div id="doc-create-cta" className="mt-8 flex flex-wrap gap-3">
           <button onClick={createDocument} className="btn btn-primary" type="button" disabled={saving}>
             {saving ? "Creating…" : `Create ${TYPE_LABEL[type].toLowerCase()}`}{" "}
             <ArrowIcon size={12} />
@@ -592,116 +735,200 @@ export function DocumentStudio() {
                 setShowAiNotes(false);
               }}
             >
-              Clear {ASSISTANT_NAME}
+              Discard draft
             </button>
           ) : null}
         </div>
       </section>
 
-      <aside className="lg:col-span-4 lg:sticky lg:top-24">
+      <aside className="flex flex-col gap-6 xl:sticky xl:top-24">
+        <div
+          className="rounded-[24px] border p-6"
+          style={{
+            background: "rgba(255,255,255,0.94)",
+            borderColor: lineBorder,
+            boxShadow: "var(--shadow-soft)",
+          }}
+        >
+          <div className="flex items-baseline justify-between gap-2">
+            <span style={{ fontSize: 13, color: "var(--color-muted)" }}>Subtotal</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 14 }}>{formatCurrency(totals.subtotalCents, currency)}</span>
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <span style={{ fontSize: 13, color: "var(--color-muted)" }}>Tax</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={taxRatePercent}
+                onChange={(e) => setTaxRatePercent(e.target.value)}
+                className="w-16 rounded-[8px] border px-2 py-1 text-right text-[13px]"
+                style={{ borderColor: lineBorder, fontFamily: "var(--font-mono)" }}
+              />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--color-muted)" }}>%</span>
+            </div>
+          </div>
+          <div className="mt-6 border-t pt-5" style={{ borderColor: lineBorder }}>
+            <div style={{ fontFamily: "var(--font-serif)", fontSize: 28, letterSpacing: "-0.02em" }}>
+              Total {formatCurrency(totals.totalCents, currency)}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary mt-6 w-full justify-center"
+            style={{ padding: "12px 18px", borderRadius: 999 }}
+            disabled={saving}
+            onClick={() => document.getElementById("doc-create-cta")?.scrollIntoView({ behavior: "smooth" })}
+          >
+            <Eye size={16} strokeWidth={2} aria-hidden /> Preview document
+          </button>
+          <details className="mt-4">
+            <summary
+              className="cursor-pointer list-none text-center text-[13px] hover:underline"
+              style={{ color: "var(--color-muted)" }}
+            >
+              More options
+            </summary>
+            <div className="mt-4 grid gap-3 rounded-[12px] border p-4" style={{ borderColor: lineBorder }}>
+              <p style={{ fontSize: 12, color: "var(--color-muted-2)" }}>
+                Save the current line items and fields as a reusable template ({loadingTemplates ? "…" : filteredTemplates.length}{" "}
+                saved for this type).
+              </p>
+              <input
+                placeholder="Template name"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                className="w-full rounded-[10px] border px-3 py-2 text-[14px]"
+                style={{ borderColor: lineBorder }}
+              />
+              <button type="button" className="btn btn-ghost w-full justify-center" onClick={saveTemplate} disabled={savingTemplate}>
+                {savingTemplate ? "Saving…" : "Save as template"}
+              </button>
+            </div>
+          </details>
+        </div>
+
         <form
           onSubmit={handleAiDraft}
-          className="rounded-[20px] border p-6 lg:p-8"
+          className="rounded-[24px] border p-6 sm:p-7"
           style={{
             background: "var(--color-ink)",
             color: "var(--color-cream)",
             borderColor: "var(--color-ink)",
+            boxShadow: "var(--shadow-float)",
           }}
         >
-          <span
-            className="pill"
-            style={{
-              background: "rgba(212,255,58,0.1)",
-              borderColor: "rgba(212,255,58,0.3)",
-              color: "var(--color-lime)",
-              marginBottom: 14,
-            }}
-          >
-            <span className="dot" /> {ASSISTANT_NAME}
-          </span>
-          <h3
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: 26,
-              lineHeight: 1.1,
-              letterSpacing: "-0.02em",
-              marginBottom: 8,
-            }}
-          >
-            Describe the job — we fill the lines next to you
-          </h3>
-          <p style={{ opacity: 0.75, fontSize: 13, marginBottom: 16 }}>
-            Draft appears in the live document. Tweak numbers, switch type to invoice, then create.
-          </p>
-
-          <textarea
-            required
-            rows={5}
-            placeholder='e.g. "Kitchen remodel — walnut cabinets, quartz, 3 weeks, client Maya Reyes, ~$14k."'
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            className="w-full rounded-[12px] border px-4 py-3"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              borderColor: "rgba(255,255,255,0.12)",
-              color: "var(--color-cream)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              resize: "vertical",
-            }}
-          />
-
-          <div className="mt-4 grid gap-3">
-            <select
-              value={industry}
-              onChange={(e) => setIndustry(e.target.value as AiEstimate["industry"])}
-              className="rounded-[10px] border px-3 py-2"
+          <div className="flex items-center gap-2" style={{ marginBottom: 12 }}>
+            <Sparkles size={16} className="text-[var(--color-lime)]" aria-hidden />
+            <span
               style={{
-                background: "rgba(255,255,255,0.04)",
-                borderColor: "rgba(255,255,255,0.12)",
-                color: "var(--color-cream)",
                 fontFamily: "var(--font-mono)",
-                fontSize: 13,
+                fontSize: 10,
+                letterSpacing: "0.16em",
+                color: "var(--color-lime)",
               }}
             >
-              {(
-                [
-                  "construction",
-                  "design",
-                  "legal",
-                  "photography",
-                  "consulting",
-                  "other",
-                ] as const
-              ).map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              min={0}
-              step={100}
-              placeholder="Budget hint (USD, optional)"
-              value={budget}
-              onChange={(e) => setBudget(e.target.value)}
-              className="rounded-[10px] border px-3 py-2"
+              {VELA.toUpperCase()} STUDIO
+            </span>
+          </div>
+          <p style={{ opacity: 0.78, fontSize: 14, lineHeight: 1.5, marginBottom: 16 }}>
+            Vela understands your client patterns. Describe the work — composition follows.
+          </p>
+
+          <div className="relative">
+            <textarea
+              required
+              rows={4}
+              placeholder='e.g. "Kitchen remodel — walnut cabinets, quartz, 3 weeks, client Maya Reyes, ~$14k."'
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              className="w-full rounded-[14px] border px-4 py-3 pr-12"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 borderColor: "rgba(255,255,255,0.12)",
                 color: "var(--color-cream)",
                 fontFamily: "var(--font-mono)",
                 fontSize: 13,
+                resize: "vertical",
               }}
             />
-          </div>
-
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <button type="submit" className="btn btn-lime" disabled={aiLoading}>
-              {aiLoading ? "Drafting…" : "Fill document"} <ArrowIcon size={12} />
+            <button
+              type="button"
+              aria-label="Voice input (coming soon)"
+              className="absolute bottom-3 right-3 grid size-9 place-items-center rounded-full border border-white/10 bg-white/5 text-white/40"
+            >
+              <Mic size={16} />
             </button>
           </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {QUICK_STARTERS.map((q) => (
+              <button
+                key={q.label}
+                type="button"
+                onClick={() => setPrompt(q.text)}
+                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-left text-[12px] transition hover:bg-white/[0.08]"
+              >
+                {q.label}
+              </button>
+            ))}
+          </div>
+
+          <details className="mt-5 rounded-[12px] border border-white/10 bg-white/[0.03] px-3 py-2">
+            <summary className="cursor-pointer list-none text-[12px] text-white/55">Advanced</summary>
+            <div className="mt-3 grid gap-3 pb-2">
+              <select
+                value={industry}
+                onChange={(e) => setIndustry(e.target.value as AiEstimate["industry"])}
+                className="rounded-[10px] border px-3 py-2"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  borderColor: "rgba(255,255,255,0.12)",
+                  color: "var(--color-cream)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 13,
+                }}
+              >
+                {(["construction", "design", "legal", "photography", "consulting", "other"] as const).map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                min={0}
+                step={100}
+                placeholder="Budget hint (USD, optional)"
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                className="rounded-[10px] border px-3 py-2"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  borderColor: "rgba(255,255,255,0.12)",
+                  color: "var(--color-cream)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 13,
+                }}
+              />
+            </div>
+          </details>
+
+          <div className="mt-6">
+            <button type="submit" className="btn btn-lime w-full justify-center text-[15px]" disabled={aiLoading} style={{ padding: "14px 22px" }}>
+              {aiLoading ? (
+                <>Vela is drafting your document…</>
+              ) : (
+                <>
+                  Compose with {VELA} <ArrowIcon size={12} />
+                </>
+              )}
+            </button>
+          </div>
+          <p className="mt-4 text-center text-[11px] leading-snug" style={{ color: "rgba(255,255,255,0.38)" }}>
+            Generated by {VELA}
+          </p>
         </form>
       </aside>
     </div>
