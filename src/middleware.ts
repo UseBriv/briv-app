@@ -5,6 +5,11 @@ import { env } from "@/lib/env";
 const isPublicRoute = createRouteMatcher([
   "/",
   "/pricing",
+  "/about",
+  "/careers",
+  "/contact",
+  "/privacy",
+  "/terms",
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/p/(.*)", // public document share links

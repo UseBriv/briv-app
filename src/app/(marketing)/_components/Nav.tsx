@@ -30,13 +30,13 @@ export function Nav() {
             textTransform: "uppercase",
           }}
         >
-          <Link href="#product" className="text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] transition-colors">
+          <Link href="/#product" className="text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] transition-colors">
             Product
           </Link>
-          <Link href="#workflow" className="text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] transition-colors">
+          <Link href="/#workflow" className="text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] transition-colors">
             Workflow
           </Link>
-          <Link href="#pricing" className="text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] transition-colors">
+          <Link href="/#pricing" className="text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] transition-colors">
             Pricing
           </Link>
           <Link

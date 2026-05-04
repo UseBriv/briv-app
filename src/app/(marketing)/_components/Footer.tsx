@@ -29,7 +29,7 @@ const COLS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Careers", href: "/careers" },
       { label: "Privacy", href: "/privacy" },
       { label: "Terms", href: "/terms" },
-      { label: "Contact", href: "mailto:hello@usebriv.com" },
+      { label: "Contact", href: "/contact" },
     ],
   },
 ];
