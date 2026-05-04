@@ -39,7 +39,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // ClerkProvider must live inside <body> (not wrapping <html>). When keys are missing,
   // skip the provider so marketing + builds still work.
   const body = env.hasClerk ? (
-    <ClerkProvider signInFallbackRedirectUrl="/dashboard" signUpFallbackRedirectUrl="/dashboard">
+    <ClerkProvider
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      signInFallbackRedirectUrl="/dashboard"
+      signUpFallbackRedirectUrl="/dashboard"
+    >
       {children}
     </ClerkProvider>
   ) : (
