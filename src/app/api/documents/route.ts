@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { createDocumentSchema } from "@/lib/validation";
-import { ensureUserExists, getCurrentOrg } from "@/lib/auth";
+import { getCurrentOrgSynced, getCurrentUser } from "@/lib/auth";
 import { generateDocumentNumber } from "@/lib/utils";
 import type { DocumentType } from "@prisma/client";
 
@@ -15,7 +15,7 @@ const PREFIX: Record<DocumentType, string> = {
 };
 
 export async function GET() {
-  const org = await getCurrentOrg();
+  const org = await getCurrentOrgSynced();
   if (!org) return new Response("NO_ACTIVE_ORG", { status: 400 });
 
   const docs = await db.document.findMany({
@@ -27,10 +27,10 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const user = await ensureUserExists();
-  if (!user) return new Response("UNAUTHORIZED", { status: 401 });
-  const org = await getCurrentOrg();
+  const org = await getCurrentOrgSynced();
   if (!org) return new Response("NO_ACTIVE_ORG", { status: 400 });
+  const user = await getCurrentUser();
+  if (!user) return new Response("UNAUTHORIZED", { status: 401 });
 
   const parsed = createDocumentSchema.safeParse(await req.json());
   if (!parsed.success) {

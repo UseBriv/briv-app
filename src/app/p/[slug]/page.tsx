@@ -34,7 +34,7 @@ export default async function PublicDocumentPage({
           className="mx-auto flex items-center justify-between"
           style={{ maxWidth: 880 }}
         >
-          <Logo size="sm" href={undefined} />
+          <Logo size="sm" href={null} />
           <span
             style={{
               fontFamily: "var(--font-mono)",

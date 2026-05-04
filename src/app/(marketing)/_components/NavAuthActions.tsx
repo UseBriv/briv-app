@@ -32,16 +32,24 @@ export function NavAuthActions() {
 
   if (userId) {
     return (
-      <div className="flex items-center" style={{ gap: 12 }}>
-        <Link href="/dashboard" className="btn btn-primary">
+      <div className="flex items-center" style={{ gap: 10 }}>
+        <UserButton
+          appearance={{
+            elements: {
+              avatarBox: { width: 32, height: 32 },
+              rootBox: { flexShrink: 0 },
+            },
+          }}
+        />
+        <span
+          aria-hidden
+          className="hidden h-5 w-px shrink-0 sm:block"
+          style={{ background: "var(--color-line-strong)", opacity: 0.65 }}
+        />
+        <Link href="/dashboard" className="btn btn-ghost">
           Workspace
           <ArrowIcon />
         </Link>
-        <UserButton
-          appearance={{
-            elements: { avatarBox: { width: 32, height: 32 } },
-          }}
-        />
       </div>
     );
   }

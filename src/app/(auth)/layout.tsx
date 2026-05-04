@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { env } from "@/lib/env";
 
@@ -15,9 +14,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       }}
     >
       <div className="flex flex-col p-10">
-        <Link href="/" className="mb-12">
-          <Logo />
-        </Link>
+        <Logo className="mb-12" />
         <div className="flex flex-1 items-center justify-center">
           {env.hasClerk ? children : <ClerkNotConfigured />}
         </div>

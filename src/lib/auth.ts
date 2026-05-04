@@ -1,6 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { db } from "./db";
 import { env } from "./env";
+import { syncWorkspaceFromSession } from "./workspace-sync";
 
 export async function getCurrentUser() {
   if (!env.hasClerk || !env.hasDatabase) return null;
@@ -31,6 +32,12 @@ export async function getCurrentOrg() {
   });
 }
 
+/** For API routes: mirror Clerk org into Prisma, then resolve the active org row. */
+export async function getCurrentOrgSynced() {
+  await ensureDashboardIdentity();
+  return getCurrentOrg();
+}
+
 export async function requireUser() {
   const user = await getCurrentUser();
   if (!user) throw new Error("UNAUTHORIZED");
@@ -49,7 +56,10 @@ export async function ensureUserExists() {
   const clerkUser = await currentUser();
   if (!clerkUser) return null;
 
-  const email = clerkUser.emailAddresses[0]?.emailAddress;
+  const primary = clerkUser.emailAddresses.find(
+    (e) => e.id === clerkUser.primaryEmailAddressId,
+  );
+  const email = primary?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress;
   if (!email) return null;
 
   return db.user.upsert({
@@ -68,4 +78,10 @@ export async function ensureUserExists() {
       imageUrl: clerkUser.imageUrl,
     },
   });
+}
+
+/** User row + active Clerk org/membership mirrored into Prisma (safe to call every dashboard load). */
+export async function ensureDashboardIdentity() {
+  await ensureUserExists();
+  await syncWorkspaceFromSession();
 }

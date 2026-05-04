@@ -11,3 +11,13 @@ export const db =
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+
+/** True if Prisma can open a connection (invalid placeholder URLs fail here). */
+export async function checkDatabaseReachable(): Promise<boolean> {
+  try {
+    await db.$queryRaw`SELECT 1`;
+    return true;
+  } catch {
+    return false;
+  }
+}

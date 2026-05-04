@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { Search, Bell } from "lucide-react";
 import { env } from "@/lib/env";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
 export function TopBar({ title }: { title: string }) {
   return (
@@ -27,6 +28,7 @@ export function TopBar({ title }: { title: string }) {
       </div>
 
       <div className="flex items-center gap-3">
+        {env.hasClerk && <WorkspaceSwitcher />}
         <div
           className="flex items-center gap-2 rounded-full border px-3 py-1.5"
           style={{

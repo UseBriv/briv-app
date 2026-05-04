@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { clientSchema } from "@/lib/validation";
-import { getCurrentOrg } from "@/lib/auth";
+import { getCurrentOrgSynced } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const org = await getCurrentOrg();
+  const org = await getCurrentOrgSynced();
   if (!org) return new Response("NO_ACTIVE_ORG", { status: 400 });
 
   const clients = await db.client.findMany({
@@ -17,7 +17,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const org = await getCurrentOrg();
+  const org = await getCurrentOrgSynced();
   if (!org) return new Response("NO_ACTIVE_ORG", { status: 400 });
 
   const parsed = clientSchema.safeParse(await req.json());
