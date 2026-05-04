@@ -324,7 +324,7 @@ export function DocumentStudio({
   const org = orgName?.trim() || null;
 
   return (
-    <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
+    <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_260px_280px] xl:items-start">
       <section className="min-w-0">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -742,6 +742,7 @@ export function DocumentStudio({
         </div>
       </section>
 
+      {/* Summary column */}
       <aside className="flex flex-col gap-6 xl:sticky xl:top-24">
         <div
           className="rounded-[24px] border p-6"
@@ -751,6 +752,18 @@ export function DocumentStudio({
             boxShadow: "var(--shadow-soft)",
           }}
         >
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "var(--color-muted-2)",
+              marginBottom: 14,
+            }}
+          >
+            Summary
+          </div>
           <div className="flex items-baseline justify-between gap-2">
             <span style={{ fontSize: 13, color: "var(--color-muted)" }}>Subtotal</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 14 }}>{formatCurrency(totals.subtotalCents, currency)}</span>
@@ -771,8 +784,20 @@ export function DocumentStudio({
             </div>
           </div>
           <div className="mt-6 border-t pt-5" style={{ borderColor: lineBorder }}>
-            <div style={{ fontFamily: "var(--font-serif)", fontSize: 28, letterSpacing: "-0.02em" }}>
-              Total {formatCurrency(totals.totalCents, currency)}
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--color-muted-2)",
+                marginBottom: 6,
+              }}
+            >
+              Total
+            </div>
+            <div style={{ fontFamily: "var(--font-serif)", fontSize: 32, letterSpacing: "-0.02em" }}>
+              {formatCurrency(totals.totalCents, currency)}
             </div>
           </div>
           <button
@@ -809,7 +834,10 @@ export function DocumentStudio({
             </div>
           </details>
         </div>
+      </aside>
 
+      {/* Vela Studio column */}
+      <aside className="xl:sticky xl:top-24">
         <form
           onSubmit={handleAiDraft}
           className="rounded-[24px] border p-6 sm:p-7"
