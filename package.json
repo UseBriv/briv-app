@@ -15,6 +15,7 @@
     "db:generate": "prisma generate",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "vercel:sync-clerk-env": "bash scripts/sync-clerk-env-vercel.sh",
+    "vercel:sync-env": "bash scripts/sync-vercel-env-from-local.sh",
     "clerk:sync-instance": "bash scripts/clerk-sync-instance-config.sh",
     "neon:development-branch": "bash scripts/neon-create-development-branch.sh",
     "neon:wire-db": "node scripts/neon-wire-database-urls.mjs"
