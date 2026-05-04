@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { Plan } from "@prisma/client";
 import { ensureDashboardIdentity, getCurrentOrg } from "@/lib/auth";
 import { checkDatabaseReachable } from "@/lib/db";
 import { Sidebar } from "./_components/Sidebar";
@@ -7,6 +8,11 @@ import { NoActiveWorkspaceBanner } from "./_components/NoActiveWorkspaceBanner";
 import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
+
+function planDisplayLabel(plan: Plan): string {
+  const name = plan === "ENTERPRISE" ? "Enterprise" : plan === "GROWTH" ? "Growth" : "Starter";
+  return `${name} Plan`;
+}
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const dbReachable = env.hasDatabase ? await checkDatabaseReachable() : true;
@@ -73,7 +79,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         background: "var(--color-paper)",
       }}
     >
-      <Sidebar />
+      <Sidebar orgName={org?.name ?? null} planLabel={org ? planDisplayLabel(org.plan) : null} />
       <div className="flex min-h-screen flex-col">
         {(!env.hasClerk || !env.hasDatabase) && <ConfigBanner />}
         {env.hasClerk && env.hasDatabase && !org && <NoActiveWorkspaceBanner />}

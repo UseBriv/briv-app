@@ -14,6 +14,12 @@ import {
   Receipt,
 } from "lucide-react";
 
+type SidebarProps = {
+  /** Current workspace; when set, the footer shows org + plan instead of a generic plan upsell. */
+  orgName?: string | null;
+  planLabel?: string | null;
+};
+
 const NAV: { label: string; href: string; icon: React.ComponentType<{ size?: number }> }[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Documents", href: "/documents", icon: FileText },
@@ -24,8 +30,9 @@ const NAV: { label: string; href: string; icon: React.ComponentType<{ size?: num
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-export function Sidebar() {
+export function Sidebar({ orgName = null, planLabel = null }: SidebarProps) {
   const pathname = usePathname();
+  const hasOrg = Boolean(orgName?.trim());
 
   return (
     <aside
@@ -72,30 +79,66 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t p-5" style={{ borderColor: "var(--color-line)" }}>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--color-muted-2)",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            marginBottom: 8,
-          }}
-        >
-          Plan · Starter
-        </div>
-        <Link
-          href="/billing"
-          className="block rounded-[10px] px-3 py-2"
-          style={{
-            background: "var(--color-ink)",
-            color: "var(--color-cream)",
-            fontSize: 13,
-            textAlign: "center",
-          }}
-        >
-          Upgrade to Growth
-        </Link>
+        {hasOrg ? (
+          <div
+            className="rounded-[12px] px-3 py-2.5"
+            style={{
+              background: "var(--color-paper-2)",
+              border: "1px solid var(--color-line)",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 14,
+                fontWeight: 500,
+                color: "var(--color-ink)",
+                lineHeight: 1.3,
+                marginBottom: 4,
+              }}
+            >
+              {orgName}
+            </div>
+            {planLabel ? (
+              <div
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 12,
+                  color: "var(--color-muted)",
+                }}
+              >
+                {planLabel}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <>
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                color: "var(--color-muted-2)",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                marginBottom: 8,
+              }}
+            >
+              Plan · Starter
+            </div>
+            <Link
+              href="/billing"
+              className="block rounded-[10px] px-3 py-2"
+              style={{
+                background: "var(--color-ink)",
+                color: "var(--color-cream)",
+                fontSize: 13,
+                textAlign: "center",
+              }}
+            >
+              Upgrade to Growth
+            </Link>
+          </>
+        )}
       </div>
     </aside>
   );
