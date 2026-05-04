@@ -4,6 +4,8 @@ import { TopBar } from "../../_components/TopBar";
 import { db } from "@/lib/db";
 import { getCurrentOrg } from "@/lib/auth";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { getAppUrl } from "@/lib/env";
+import { SendDocumentActions } from "./SendDocumentActions";
 
 export default async function DocumentDetail({
   params,
@@ -25,6 +27,7 @@ export default async function DocumentDetail({
   });
 
   if (!doc) notFound();
+  const shareUrl = `${getAppUrl()}/p/${doc.publicSlug}`;
 
   return (
     <>
@@ -72,11 +75,14 @@ export default async function DocumentDetail({
             >
               Public link
             </Link>
-            <Link href="/documents" className="btn btn-primary" style={{ padding: "8px 14px" }}>
-              Send
-            </Link>
           </div>
         </div>
+        <SendDocumentActions
+          documentId={doc.id}
+          initialStatus={doc.status}
+          initialSentAt={doc.sentAt?.toISOString() ?? null}
+          initialShareUrl={shareUrl}
+        />
 
         <div
           className="rounded-[16px] border p-6"
@@ -143,6 +149,42 @@ export default async function DocumentDetail({
             </span>
           </div>
         </div>
+
+        {doc.signatures.length > 0 && (
+          <div className="mt-8">
+            <h3
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: 24,
+                letterSpacing: "-0.01em",
+                marginBottom: 12,
+              }}
+            >
+              Signatures
+            </h3>
+            <ul
+              className="overflow-hidden rounded-[12px] border"
+              style={{ background: "var(--color-cream)", borderColor: "var(--color-line)" }}
+            >
+              {doc.signatures.map((signature) => (
+                <li
+                  key={signature.id}
+                  className="px-4 py-3"
+                  style={{ borderTop: "1px solid var(--color-line)" }}
+                >
+                  <div style={{ fontWeight: 600 }}>
+                    {signature.signerName} ({signature.signerEmail})
+                  </div>
+                  <div style={{ color: "var(--color-muted)", fontSize: 12 }}>
+                    {formatDate(signature.signedAt)}
+                    {signature.ipAddress ? ` · IP ${signature.ipAddress}` : ""}
+                    {signature.verified ? " · Verified" : ""}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {doc.events.length > 0 && (
           <div className="mt-8">

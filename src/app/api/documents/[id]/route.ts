@@ -35,6 +35,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     include: { lineItems: true },
   });
   if (!existing) return new Response("NOT_FOUND", { status: 404 });
+  if (existing.status === "SIGNED" || existing.status === "PAID") {
+    return new Response("DOCUMENT_LOCKED_AFTER_SIGNING", { status: 409 });
+  }
 
   const lineItems = input.lineItems ?? existing.lineItems.map((li) => ({
     description: li.description,

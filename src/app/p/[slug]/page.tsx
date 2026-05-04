@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { Logo } from "@/components/ui/Logo";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { generateShareToken } from "@/lib/signing";
+import { PublicSignatureForm } from "./PublicSignatureForm";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +20,20 @@ export default async function PublicDocumentPage({
       org: true,
       client: true,
       lineItems: { orderBy: { position: "asc" } },
-      signatures: true,
+      signatures: { orderBy: { signedAt: "desc" } },
     },
   });
 
   if (!doc) notFound();
+  let shareToken = doc.shareToken;
+  if (!shareToken && doc.status !== "SIGNED" && doc.status !== "PAID") {
+    const refreshed = await db.document.update({
+      where: { id: doc.id },
+      data: { shareToken: generateShareToken() },
+      select: { shareToken: true },
+    });
+    shareToken = refreshed.shareToken;
+  }
 
   return (
     <div className="min-h-screen" style={{ background: "var(--color-paper)" }}>
@@ -179,6 +190,28 @@ export default async function PublicDocumentPage({
             </span>
           </div>
         </div>
+
+        {doc.signatures.length > 0 ? (
+          <div
+            className="mt-8 rounded-[18px] border p-6"
+            style={{ background: "var(--color-cream)", borderColor: "var(--color-line)" }}
+          >
+            <div style={{ fontFamily: "var(--font-serif)", fontSize: 22 }}>Signed</div>
+            <p style={{ marginTop: 6, color: "var(--color-muted)" }}>
+              Last signed by {doc.signatures[0]?.signerName} on{" "}
+              {doc.signatures[0] ? formatDate(doc.signatures[0].signedAt) : ""}
+            </p>
+          </div>
+        ) : null}
+
+        {doc.status !== "SIGNED" && doc.status !== "PAID" && shareToken ? (
+          <PublicSignatureForm
+            documentId={doc.id}
+            shareToken={shareToken}
+            defaultName={doc.client?.name ?? undefined}
+            defaultEmail={doc.client?.email ?? undefined}
+          />
+        ) : null}
 
         <p
           className="mt-6 text-center"

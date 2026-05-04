@@ -4,9 +4,9 @@ import { NewDocumentForm } from "./NewDocumentForm";
 export default function NewDocumentPage() {
   return (
     <>
-      <TopBar title="New document" />
+      <TopBar title="Document studio" />
       <main className="px-8 py-8">
-        <div style={{ maxWidth: 880, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <NewDocumentForm />
         </div>
       </main>

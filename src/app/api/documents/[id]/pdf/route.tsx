@@ -48,9 +48,13 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       totalCents={doc.totalCents}
       taxRate={Number(doc.taxRate)}
       signatures={doc.signatures.map((s) => ({
+        id: s.id,
         signerName: s.signerName,
         signerEmail: s.signerEmail,
         signedAt: s.signedAt,
+        ipAddress: s.ipAddress,
+        userAgent: s.userAgent,
+        verified: s.verified,
       }))}
     />,
   );

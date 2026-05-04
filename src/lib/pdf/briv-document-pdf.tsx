@@ -117,7 +117,15 @@ export type BrivDocumentPdfProps = {
   taxCents: number;
   totalCents: number;
   taxRate: number;
-  signatures: { signerName: string; signerEmail: string; signedAt: Date }[];
+  signatures: {
+    id: string;
+    signerName: string;
+    signerEmail: string;
+    signedAt: Date;
+    ipAddress: string | null;
+    userAgent: string | null;
+    verified: boolean;
+  }[];
 };
 
 export function BrivDocumentPdf(props: BrivDocumentPdfProps) {
@@ -179,9 +187,18 @@ export function BrivDocumentPdf(props: BrivDocumentPdfProps) {
           <View style={styles.sigBlock}>
             <Text style={styles.sectionLabel}>Signatures</Text>
             {props.signatures.map((s, i) => (
-              <Text key={i} style={styles.sigLine}>
-                {s.signerName} ({s.signerEmail}) — {formatDate(s.signedAt)}
-              </Text>
+              <View key={i} style={{ marginBottom: 8 }}>
+                <Text style={styles.sigLine}>
+                  {s.signerName} ({s.signerEmail}) — {formatDate(s.signedAt)}
+                </Text>
+                <Text style={{ fontSize: 8, color: "#666" }}>
+                  Signature ID: {s.id} · Verified: {s.verified ? "yes" : "no"}
+                  {s.ipAddress ? ` · IP: ${s.ipAddress}` : ""}
+                </Text>
+                {s.userAgent ? (
+                  <Text style={{ fontSize: 8, color: "#666" }}>User agent: {s.userAgent}</Text>
+                ) : null}
+              </View>
             ))}
           </View>
         ) : null}

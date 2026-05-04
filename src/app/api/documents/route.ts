@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { createDocumentSchema } from "@/lib/validation";
 import { getCurrentOrgSynced, getCurrentUser } from "@/lib/auth";
 import { generateDocumentNumber } from "@/lib/utils";
+import { generateShareToken } from "@/lib/signing";
 import type { DocumentType } from "@prisma/client";
 
 export const runtime = "nodejs";
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
       taxCents,
       totalCents,
       number,
+      shareToken: generateShareToken(),
       dueAt: input.dueAt ? new Date(input.dueAt) : null,
       lineItems: {
         create: input.lineItems.map((li, idx) => ({
