@@ -7,7 +7,7 @@ export const anthropic = apiKey
   : (null as unknown as Anthropic);
 
 export const MODELS = {
-  default: process.env.CLAUDE_MODEL ?? "claude-sonnet-4-5",
+  smart: process.env.CLAUDE_MODEL ?? "claude-sonnet-4-5",
   fast: process.env.CLAUDE_MODEL_FAST ?? "claude-haiku-4-5",
 };
 
