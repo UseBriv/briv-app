@@ -57,7 +57,14 @@ export default async function DocumentDetail({
               {doc.client?.name ?? "No client"} · created {formatDate(doc.createdAt)}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={`/api/documents/${doc.id}/pdf`}
+              className="btn btn-ghost"
+              style={{ padding: "8px 14px" }}
+            >
+              Download PDF
+            </a>
             <Link
               href={`/p/${doc.publicSlug}`}
               className="btn btn-ghost"

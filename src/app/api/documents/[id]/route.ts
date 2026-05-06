@@ -1,13 +1,13 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { updateDocumentSchema } from "@/lib/validation";
-import { getCurrentOrg, requireUser } from "@/lib/auth";
+import { getCurrentOrgSynced, requireUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  const org = await getCurrentOrg();
+  const org = await getCurrentOrgSynced();
   if (!org) return new Response("NO_ACTIVE_ORG", { status: 400 });
 
   const doc = await db.document.findFirst({
@@ -20,9 +20,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  const user = await requireUser();
-  const org = await getCurrentOrg();
+  const org = await getCurrentOrgSynced();
   if (!org) return new Response("NO_ACTIVE_ORG", { status: 400 });
+  const user = await requireUser();
 
   const parsed = updateDocumentSchema.safeParse(await req.json());
   if (!parsed.success) {
@@ -84,7 +84,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
 export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  const org = await getCurrentOrg();
+  const org = await getCurrentOrgSynced();
   if (!org) return new Response("NO_ACTIVE_ORG", { status: 400 });
 
   const existing = await db.document.findFirst({ where: { id, orgId: org.id } });

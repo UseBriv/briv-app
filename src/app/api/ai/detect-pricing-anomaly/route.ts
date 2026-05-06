@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { detectPricingAnomaly } from "@/lib/ai";
 import { auth } from "@clerk/nextjs/server";
+import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -30,8 +31,10 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return new Response("UNAUTHORIZED", { status: 401 });
+  if (env.hasClerk) {
+    const { userId } = await auth();
+    if (!userId) return new Response("UNAUTHORIZED", { status: 401 });
+  }
 
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) {

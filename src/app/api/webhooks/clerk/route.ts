@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { Webhook } from "svix";
 import { db } from "@/lib/db";
+import { mapClerkMembershipRole } from "@/lib/clerk-org-role";
+import { syncOrgMembershipFromClerk } from "@/lib/workspace-sync";
 
 export const runtime = "nodejs";
 
@@ -132,6 +134,12 @@ export async function POST(req: NextRequest) {
 
     case "organizationMembership.created":
     case "organizationMembership.updated": {
+      const synced = await syncOrgMembershipFromClerk({
+        clerkUserId: event.data.public_user_data.user_id,
+        clerkOrgId: event.data.organization.id,
+      });
+      if (synced.ok) break;
+
       const user = await db.user.findUnique({
         where: { clerkId: event.data.public_user_data.user_id },
       });
@@ -140,7 +148,7 @@ export async function POST(req: NextRequest) {
       });
       if (!user || !org) break;
 
-      const role = mapRole(event.data.role);
+      const role = mapClerkMembershipRole(event.data.role);
       await db.membership.upsert({
         where: { userId_orgId: { userId: user.id, orgId: org.id } },
         create: { userId: user.id, orgId: org.id, role },
@@ -165,11 +173,4 @@ export async function POST(req: NextRequest) {
   }
 
   return Response.json({ ok: true });
-}
-
-function mapRole(role: string): "OWNER" | "ADMIN" | "MEMBER" | "VIEWER" {
-  if (role.includes("admin")) return "ADMIN";
-  if (role.includes("owner")) return "OWNER";
-  if (role.includes("viewer")) return "VIEWER";
-  return "MEMBER";
 }

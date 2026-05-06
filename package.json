@@ -13,7 +13,12 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "vercel:sync-clerk-env": "bash scripts/sync-clerk-env-vercel.sh",
+    "vercel:sync-env": "bash scripts/sync-vercel-env-from-local.sh",
+    "clerk:sync-instance": "bash scripts/clerk-sync-instance-config.sh",
+    "neon:development-branch": "bash scripts/neon-create-development-branch.sh",
+    "neon:wire-db": "node scripts/neon-wire-database-urls.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.94.0",
@@ -27,6 +32,7 @@
     "@radix-ui/react-slot": "^1.1.2",
     "@radix-ui/react-tabs": "^1.1.3",
     "@radix-ui/react-toast": "^1.2.6",
+    "@react-pdf/renderer": "^4.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
