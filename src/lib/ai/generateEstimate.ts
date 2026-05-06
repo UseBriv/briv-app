@@ -57,7 +57,7 @@ export async function generateEstimate(input: GenerateEstimateInput): Promise<Ai
   };
 
   const message = await client.messages.create({
-    model: MODELS.default,
+    model: MODELS.smart,
     max_tokens: 4096,
     temperature: 0.4,
     system: SYSTEM_ESTIMATE,
