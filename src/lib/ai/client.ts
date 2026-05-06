@@ -1,19 +1,19 @@
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
-const apiKey = process.env.OPENAI_API_KEY;
+const apiKey = process.env.ANTHROPIC_API_KEY;
 
-export const openai = apiKey
-  ? new OpenAI({ apiKey })
-  : (null as unknown as OpenAI);
+export const anthropic = apiKey
+  ? new Anthropic({ apiKey })
+  : (null as unknown as Anthropic);
 
 export const MODELS = {
-  smart: process.env.OPENAI_MODEL ?? "gpt-4o",
-  fast: process.env.OPENAI_MODEL_FAST ?? "gpt-4o-mini",
-} as const;
+  smart: process.env.CLAUDE_MODEL ?? "claude-sonnet-4-5",
+  fast: process.env.CLAUDE_MODEL_FAST ?? "claude-haiku-4-5",
+};
 
-export function assertOpenAI(): OpenAI {
-  if (!openai) {
-    throw new Error("OpenAI is not configured. Set OPENAI_API_KEY.");
+export function assertAnthropic(): Anthropic {
+  if (!anthropic) {
+    throw new Error("Anthropic is not configured. Set ANTHROPIC_API_KEY.");
   }
-  return openai;
+  return anthropic;
 }
