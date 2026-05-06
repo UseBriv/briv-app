@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { assertOpenAI, MODELS } from "./client";
+import { assertAnthropic, MODELS } from "./client";
 import { SYSTEM_PRICING } from "./prompts";
 import type { Industry, PricingAnalysis } from "./types";
 
@@ -32,14 +32,14 @@ export type DetectPricingAnomalyInput = {
 export async function detectPricingAnomaly(
   input: DetectPricingAnomalyInput,
 ): Promise<PricingAnalysis> {
-  const client = assertOpenAI();
+  const client = assertAnthropic();
 
-  const completion = await client.chat.completions.create({
+  const message = await client.messages.create({
     model: MODELS.fast,
+    max_tokens: 2048,
     temperature: 0.1,
-    response_format: { type: "json_object" },
+    system: SYSTEM_PRICING,
     messages: [
-      { role: "system", content: SYSTEM_PRICING },
       {
         role: "user",
         content: `Industry: ${input.industry}
@@ -57,18 +57,23 @@ ${input.lineItems
   )
   .join("\n")}
 
-Return JSON:
+Return JSON in this exact shape:
 {
   "anomalies": [{ "lineItemIndex": int, "description": string, "proposedCents": int, "expectedRangeCents": { "min": int, "max": int }, "deviationPct": number, "severity": "info"|"warn"|"alert", "reason": string }],
   "summary": string,
   "totalDeltaPct": number
-}`,
+}
+
+Respond with ONLY valid JSON. No markdown fences, no preamble, no commentary.`,
       },
+      { role: "assistant", content: "{" },
     ],
   });
 
-  const raw = completion.choices[0]?.message.content;
-  if (!raw) throw new Error("AI_NO_RESPONSE");
+  const block = message.content[0];
+  if (!block || block.type !== "text") throw new Error("AI_NO_RESPONSE");
 
+  // Re-prepend the "{" prefill so the JSON parses cleanly
+  const raw = "{" + block.text;
   return responseSchema.parse(JSON.parse(raw));
 }

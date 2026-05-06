@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { assertOpenAI, MODELS } from "./client";
+import { assertAnthropic, MODELS } from "./client";
 import { SYSTEM_ESTIMATE } from "./prompts";
 import type { AiEstimate, Industry } from "./types";
 
@@ -46,7 +46,7 @@ export type GenerateEstimateInput = {
 };
 
 export async function generateEstimate(input: GenerateEstimateInput): Promise<AiEstimate> {
-  const client = assertOpenAI();
+  const client = assertAnthropic();
 
   const userPayload = {
     brief: input.prompt,
@@ -56,12 +56,12 @@ export async function generateEstimate(input: GenerateEstimateInput): Promise<Ai
     clientName: input.clientName ?? null,
   };
 
-  const completion = await client.chat.completions.create({
-    model: MODELS.smart,
+  const message = await client.messages.create({
+    model: MODELS.default,
+    max_tokens: 4096,
     temperature: 0.4,
-    response_format: { type: "json_object" },
+    system: SYSTEM_ESTIMATE,
     messages: [
-      { role: "system", content: SYSTEM_ESTIMATE },
       {
         role: "user",
         content: `Generate an estimate as a JSON object matching this exact shape:
@@ -81,14 +81,19 @@ export async function generateEstimate(input: GenerateEstimateInput): Promise<Ai
   "confidence": number (0..1)
 }
 
+Respond with ONLY valid JSON. No markdown fences, no preamble, no commentary.
+
 Brief: ${JSON.stringify(userPayload)}`,
       },
+      { role: "assistant", content: "{" },
     ],
   });
 
-  const raw = completion.choices[0]?.message.content;
-  if (!raw) throw new Error("AI_NO_RESPONSE");
+  const block = message.content[0];
+  if (!block || block.type !== "text") throw new Error("AI_NO_RESPONSE");
 
+  // Re-prepend the "{" prefill so the JSON parses cleanly
+  const raw = "{" + block.text;
   const parsed = estimateResponseSchema.parse(JSON.parse(raw));
 
   // Recompute totals server-side to guarantee math invariants.

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { assertOpenAI, MODELS } from "./client";
+import { assertAnthropic, MODELS } from "./client";
 import { SYSTEM_CLAUSE } from "./prompts";
 import type { ClauseAnalysis } from "./types";
 
@@ -36,18 +36,17 @@ export type AnalyzeClausesInput = {
 };
 
 export async function analyzeClauses(input: AnalyzeClausesInput): Promise<ClauseAnalysis> {
-  const client = assertOpenAI();
+  const client = assertAnthropic();
 
-  const completion = await client.chat.completions.create({
+  const message = await client.messages.create({
     model: MODELS.smart,
+    max_tokens: 4096,
     temperature: 0.2,
-    response_format: { type: "json_object" },
+    system: SYSTEM_CLAUSE,
     messages: [
-      { role: "system", content: SYSTEM_CLAUSE },
       {
         role: "user",
         content: `Perspective: ${input.perspective ?? "sender"}.
-
 Analyze the contract below and return JSON in this shape:
 {
   "overallRisk": "low"|"medium"|"high",
@@ -56,16 +55,21 @@ Analyze the contract below and return JSON in this shape:
   "recommendation": string
 }
 
+Respond with ONLY valid JSON. No markdown fences, no preamble, no commentary.
+
 Contract:
 """
 ${input.contractText.slice(0, 18000)}
 """`,
       },
+      { role: "assistant", content: "{" },
     ],
   });
 
-  const raw = completion.choices[0]?.message.content;
-  if (!raw) throw new Error("AI_NO_RESPONSE");
+  const block = message.content[0];
+  if (!block || block.type !== "text") throw new Error("AI_NO_RESPONSE");
 
+  // Re-prepend the "{" prefill so the JSON parses cleanly
+  const raw = "{" + block.text;
   return responseSchema.parse(JSON.parse(raw));
 }
