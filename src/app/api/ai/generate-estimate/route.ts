@@ -2,13 +2,16 @@ import { NextRequest } from "next/server";
 import { aiEstimateSchema } from "@/lib/validation";
 import { generateEstimate } from "@/lib/ai";
 import { auth } from "@clerk/nextjs/server";
+import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return new Response("UNAUTHORIZED", { status: 401 });
+  if (env.hasClerk) {
+    const { userId } = await auth();
+    if (!userId) return new Response("UNAUTHORIZED", { status: 401 });
+  }
 
   let payload: unknown;
   try {

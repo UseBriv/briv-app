@@ -28,13 +28,6 @@ const STEPS = [
   },
 ];
 
-const STATS = [
-  { num: "12", em: "min", label: "Avg time, brief → sent" },
-  { num: "3", em: "×", label: "Faster payment cycle" },
-  { num: "94", em: "%", label: "Proposal acceptance rate" },
-  { num: "$0", em: "", label: "Setup or onboarding fees" },
-];
-
 export function Workflow() {
   return (
     <section
@@ -143,46 +136,6 @@ export function Workflow() {
             </div>
           ))}
         </div>
-
-        <div className="reveal" style={{ marginTop: 80 }}>
-          <div className="stats-grid">
-            {STATS.map((stat) => (
-              <div
-                key={stat.label}
-                className="stat-cell"
-                style={{ padding: "36px 28px" }}
-              >
-                <div
-                  style={{
-                    fontFamily: "var(--font-serif)",
-                    fontSize: "clamp(48px, 5vw, 72px)",
-                    lineHeight: 1,
-                    letterSpacing: "-0.02em",
-                    marginBottom: 8,
-                  }}
-                >
-                  {stat.num}
-                  {stat.em && (
-                    <em style={{ fontStyle: "italic", color: "var(--color-ember)" }}>
-                      {stat.em}
-                    </em>
-                  )}
-                </div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    color: "var(--color-muted)",
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       <style>{`
@@ -199,20 +152,6 @@ export function Workflow() {
           .wf-step { border-right: none; border-bottom: 1px solid var(--color-line); }
           .wf-step:last-child { border-bottom: none; }
           .wf-arrow { display: none !important; }
-        }
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 0;
-          border: 1px solid var(--color-line);
-          border-radius: var(--radius-brand-lg);
-          overflow: hidden;
-          background: var(--color-cream);
-        }
-        .stat-cell { border-right: 1px solid var(--color-line); }
-        .stat-cell:last-child { border-right: none; }
-        @media (max-width: 720px) {
-          .stats-grid { grid-template-columns: repeat(2, 1fr); }
         }
       `}</style>
     </section>

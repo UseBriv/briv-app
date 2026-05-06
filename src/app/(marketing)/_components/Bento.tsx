@@ -174,7 +174,7 @@ export function Bento() {
               Get paid <em style={{ fontStyle: "italic", color: "var(--color-ember)" }}>3× faster.</em>
             </>
           }
-          body="PayPal, Stripe, ACH, and card built in. No platform fees on Pro."
+          body="PayPal, Stripe, ACH, and cards built in. No platform fees on Growth or Pro."
           icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="var(--color-ember)" strokeWidth={2} width={20} height={20}>
               <rect x="2" y="5" width="20" height="14" rx="2" />
@@ -183,10 +183,10 @@ export function Bento() {
           }
         />
         <BentoCard
-          span="span 1 / span 1"
-          label="04"
+          span="span 2 / span 2"
+          label="04 / TEMPLATES"
           title={<>Smart templates.</>}
-          body="Save once. Reuse forever."
+          body="Save a winning scope once, parameterize client, totals, and terms — then spin up polished docs in one click."
           icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="var(--color-ember)" strokeWidth={2} width={20} height={20}>
               <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -213,7 +213,7 @@ export function Bento() {
           }
         />
         <BentoCard
-          span="span 4 / span 4"
+          span="span 6 / span 6"
           label="06 / STACK"
           title={
             <>
@@ -243,12 +243,19 @@ export function Bento() {
         .bento-grid {
           display: grid;
           grid-template-columns: repeat(6, 1fr);
-          grid-auto-rows: minmax(180px, auto);
+          grid-auto-rows: minmax(160px, auto);
           gap: 16px;
+          align-items: stretch;
+        }
+        /* Row-two cards: equal thirds (2+2+2 on 6 cols) — avoids narrow “04” column + stray empty track */
+        .bento-grid > :nth-child(3),
+        .bento-grid > :nth-child(4),
+        .bento-grid > :nth-child(5) {
+          min-height: 220px;
         }
         @media (max-width: 900px) {
           .bento-grid { grid-template-columns: repeat(2, 1fr); }
-          .bento-grid > div { grid-column: span 2 !important; grid-row: auto !important; }
+          .bento-grid > div { grid-column: span 2 !important; grid-row: auto !important; min-height: 0 !important; }
         }
       `}</style>
     </section>

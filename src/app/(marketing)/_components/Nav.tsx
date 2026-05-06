@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
+import { env } from "@/lib/env";
+import { NavAuthActions } from "./NavAuthActions";
 
 export function Nav() {
   return (
@@ -60,15 +62,19 @@ export function Nav() {
             Live demo
           </Link>
         </div>
-        <div className="flex items-center" style={{ gap: 12 }}>
-          <Link href="/sign-in" className="btn btn-ghost">
-            Sign in
-          </Link>
-          <Link href="/sign-up" className="btn btn-primary">
-            Start free
-            <ArrowIcon />
-          </Link>
-        </div>
+        {env.hasClerk ? (
+          <NavAuthActions />
+        ) : (
+          <div className="flex items-center" style={{ gap: 12 }}>
+            <Link href="/sign-in" className="btn btn-ghost">
+              Sign in
+            </Link>
+            <Link href="/sign-up" className="btn btn-primary">
+              Start free
+              <ArrowIcon />
+            </Link>
+          </div>
+        )}
       </nav>
     </div>
   );

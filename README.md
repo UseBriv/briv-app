@@ -125,6 +125,56 @@ npm run dev
 
 App runs at http://localhost:3000.
 
+### 5. Vercel preview deployments and Clerk
+
+**Optional — Clerk Backend API (origins + redirect URLs):** From `briv-app`, with a filled `.env.local` (at least `CLERK_SECRET_KEY`), run `npm run clerk:sync-instance` to `PATCH` default `allowed_origins` / `development_origin` and add **redirect URL** allowlist entries for `http://localhost:3000`, `https://www.usebriv.com`, and the common Vercel preview host. The script does not change the **application name** in the dashboard (set that to “Briv” under Clerk → your app). The API does not accept `https://*.vercel.app` as a **redirect** URL; add other preview hostnames in the [Clerk dashboard](https://dashboard.clerk.com) or extend the script.
+
+PR and branch previews show “Clerk not configured” until auth env vars exist for the **Preview** environment (not only Production).
+
+1. **Vercel** → Project → Settings → Environment Variables: add `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` (same values as local, or use Clerk’s development keys for previews). When creating or editing each variable, enable **Preview** (and usually **Development** for `vercel dev`).
+2. **Clerk Dashboard** → your application → configure **Redirect URLs** / **Allowed origins** so preview URLs are permitted — for example `https://*.vercel.app` and/or your team’s stable preview domain.
+3. Add other secrets your preview needs (`DATABASE_URL`, `OPENAI_API_KEY`, etc.) to Preview the same way, or previews will fail on protected routes and APIs.
+
+`NEXT_PUBLIC_APP_URL` is optional on Vercel: if unset, the app uses `https://$VERCEL_URL` for canonical URLs on each deployment.
+
+#### Clerk keys via Vercel CLI
+
+Yes — you can upload variables from the terminal instead of the dashboard. They are stored on Vercel’s project, not in your git repo (never commit secrets).
+
+After `npx vercel login`, `npx vercel link`, and a filled `.env.local`, you can sync both Clerk keys to **preview**, **production**, and (unless `SKIP_DEVELOPMENT=1`) **development** in one shot:
+
+```bash
+cd briv-app
+npm run vercel:sync-clerk-env
+```
+
+Manual step-by-step:
+
+```bash
+cd briv-app
+npx vercel login    # once per machine
+npx vercel link     # once: attach this directory to the right Vercel project
+```
+
+Add Clerk for **each** environment you use (Preview and Production are separate records):
+
+```bash
+npx vercel env add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY preview
+npx vercel env add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY production
+npx vercel env add CLERK_SECRET_KEY preview
+npx vercel env add CLERK_SECRET_KEY production
+```
+
+The CLI will prompt for values. To avoid putting the secret on the command line (and in shell history), pipe from a file and delete the file afterward:
+
+```bash
+npx vercel env add CLERK_SECRET_KEY preview < ./clerk-secret.txt
+```
+
+For local `vercel dev`, also add the same keys for **development**: `npx vercel env add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY development` (and the secret key the same way).
+
+**Deploy after changing env vars:** the CLI does not replace `git push`. Variables apply on the **next** build. Redeploy by pushing a commit, clicking **Redeploy** in the Vercel UI, or running `npx vercel` (preview) / `npx vercel --prod` (production).
+
 | Surface          | URL                          |
 | ---------------- | ---------------------------- |
 | Landing          | `/`                          |
@@ -193,6 +243,8 @@ Both verify signatures (svix for Clerk, native for Stripe) before mutating the D
 | `npm run db:migrate` | Create a migration |
 | `npm run db:studio` | Prisma Studio |
 | `npm run format` | Prettier (with Tailwind plugin) |
+| `npm run vercel:sync-clerk-env` | Push Clerk keys from `.env.local` to Vercel (preview + production + development) |
+| `npm run clerk:sync-instance` | Clerk Backend API: instance origins + redirect URL allowlist (see §5) |
 
 ---
 

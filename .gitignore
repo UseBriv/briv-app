@@ -26,6 +26,7 @@ yarn-error.log*
 # env
 .env
 .env.local
+neon-vercel-production.snippet.env
 .env.development.local
 .env.test.local
 .env.production.local

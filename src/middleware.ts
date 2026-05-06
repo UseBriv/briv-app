@@ -12,11 +12,14 @@ const isPublicRoute = createRouteMatcher([
   "/api/health",
 ]);
 
-const protectedMiddleware = clerkMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req)) {
-    await auth.protect();
-  }
-});
+const protectedMiddleware = clerkMiddleware(
+  async (auth, req) => {
+    if (!isPublicRoute(req)) {
+      await auth.protect();
+    }
+  },
+  { signInUrl: "/sign-in", signUpUrl: "/sign-up" },
+);
 
 // When Clerk isn't configured, run an inert middleware so the app still
 // boots (marketing + public pages work; protected pages render but the
